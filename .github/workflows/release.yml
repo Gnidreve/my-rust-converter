@@ -31,7 +31,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path release
-          Copy-Item "target/release/my_frist_rust_project.exe" release/
+          Copy-Item "target/release/my_rust_converter.exe" release/
           Copy-Item "target/release/ffmpeg.exe" release/
           Compress-Archive -Path "release/*" -DestinationPath "my-rust-converter-windows.zip"
 

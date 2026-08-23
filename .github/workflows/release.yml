@@ -1,0 +1,43 @@
+name: Release (Windows)
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: # manuelles Auslösen über den "Run workflow"-Button auf GitHub
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build (release)
+        run: cargo build --release
+
+      - name: Download FFmpeg (statischer Windows-Build, nicht im Repo eingecheckt)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-master-latest-win64-gpl.zip" -OutFile ffmpeg.zip
+          Expand-Archive -Path ffmpeg.zip -DestinationPath ffmpeg-extracted
+          $ffmpegExe = Get-ChildItem -Path ffmpeg-extracted -Filter ffmpeg.exe -Recurse | Select-Object -First 1
+          Copy-Item $ffmpegExe.FullName "target/release/ffmpeg.exe"
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path release
+          Copy-Item "target/release/my_frist_rust_project.exe" release/
+          Copy-Item "target/release/ffmpeg.exe" release/
+          Compress-Archive -Path "release/*" -DestinationPath "my-rust-converter-windows.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: my-rust-converter-windows.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
